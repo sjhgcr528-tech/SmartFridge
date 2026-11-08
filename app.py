@@ -4,7 +4,9 @@ import os
 import re
 from flask import Flask, jsonify, render_template, request
 from google import genai  # Google GenAI 공식 SDK
+from dotenv import load_dotenv
 
+load_dotenv()
 app = Flask(__name__)
 
 # 데이터가 저장될 파일 이름

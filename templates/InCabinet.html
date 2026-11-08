@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Fridge</title>
+  <!-- FontAwesome 아이콘 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    /* 모바일 프레임 */
+    .app-container {
+      width: 375px;
+      height: 812px;
+      background-color: #d6cbbb; /* 상단 연연두색 배경 */
+      border-radius: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+      border: 8px solid #333;
+    }
+
+    /* 상단 상태바 */
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 24px 4px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .status-bar .icons i {
+      margin-left: 4px;
+    }
+
+    /* 헤더 */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+    }
+
+    .header .back-btn, .header .add-btn {
+      font-size: 20px;
+      cursor: pointer;
+      color: #333;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1c1c1e;
+    }
+
+    /* 메인 스크롤 콘텐츠 영역 */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* 정렬 필터 드롭다운 */
+    .sort-dropdown {
+      align-self: flex-start;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 2열 그리드 레이아웃 */
+    .ingredients-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* 재료 카드 공통 스타일 */
+    .ingredient-card {
+      background-color: #ffffff;
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      position: relative; /* 우측 상단 버튼 배치를 위해 추가 */
+    }
+
+    /* 우측 상단 - 삭제 버튼 스타일 */
+    .delete-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 22px;
+      height: 22px;
+      background-color: #ff5252;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* 상태별 배경색 */
+    .ingredient-card.safe {
+      background-color: #ffffff; /* 안전 상태 */
+    }
+
+    .ingredient-card.warning {
+      background-color: #ffebee; /* 유통기한 임박 (연한 빨강) */
+    }
+
+    .ingredient-card.danger {
+      background-color: #bdbdbd; /* 만료 (회색) */
+    }
+
+    .ingredient-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ingredient-icon {
+      font-size: 22px;
+      width: 28px;
+      text-align: center;
+    }
+
+    .ingredient-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+    }
+
+    /* 상태 표시 아이콘 (체크, 경고, X) */
+    .status-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: white;
+    }
+
+    .status-icon.safe {
+      background-color: #66bb6a; /* 초록색 체크 */
+    }
+
+    .status-icon.warning {
+      background-color: #ffb74d; /* 주황색 느낌표/주의 */
+    }
+
+    .status-icon.danger {
+      background-color: #ef5350; /* 빨간색 X */
+    }
+
+    /* 플로팅 추가 버튼 (FAB) */
+    .fab-btn {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #20e070;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      cursor: pointer;
+      border: none;
+      z-index: 5;
+    }
+
+    /* 하단 네비게이션 바 */
+    .navbar {
+      height: 65px;
+      background-color: #ffffff;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      border-top: 1px solid #eee;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: #8e8e93;
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .nav-item.active {
+      color: #2e7d32;
+      font-weight: bold;
+    }
+
+    .nav-item i {
+      font-size: 18px;
+    }
+
+    .home-indicator {
+      width: 134px;
+      height: 5px;
+      background-color: #000;
+      border-radius: 3px;
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- 상태바 -->
+    <div class="status-bar">
+      <span id ='clock'>00:00</span>
+      <div class="icons">
+        <i class="fa-solid fa-signal"></i>
+        <i class="fa-solid fa-wifi"></i>
+        <i class="fa-solid fa-battery-full"></i>
+      </div>
+    </div>
+
+    <!-- 헤더 -->
+    <div class="header">
+      <div class="back-btn" onclick="location.href='/'" style="cursor: pointer;"><i class="fa-solid fa-arrow-left"></i></div>
+      <h1>상온</h1>
+      <div><i>ㅤ</i></div>
+    </div>
+
+    <!-- 메인 레시피 재료 리스트 영역 -->
+    <div class="content-area">
+      
+      <!-- 정렬 드롭다운 -->
+      <div class="sort-dropdown">
+        <span>가나다 순</span>
+        <i class="fa-solid fa-caret-down"></i>
+      </div>
+
+      <!-- 재료 목록 그리드 (2열) -->
+      <div class="ingredients-grid">
+        {% for item in items %}
+        <div class="ingredient-card {{ item.status }}">
+          <button class="delete-btn" onclick="deleteItem('InCabinet', {{ loop.index0 }})">
+            <i class="fa-solid fa-minus"></i>
+          </button>
+          <div class="ingredient-info">
+            <span class="ingredient-icon"></span>
+            <span class="ingredient-name">{{ item.name }} (D-{{ item.remaining_days }})</span>
+          </div>
+          {% if item.status == 'safe' %}
+            <div class="status-icon safe"><i class="fa-solid fa-check"></i></div>
+          {% elif item.status == 'warning' %}
+            <div class="status-icon warning"><i class="fa-solid fa-exclamation"></i></div>
+          {% else %}
+            <div class="status-icon danger"><i class="fa-solid fa-xmark"></i></div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- 플로팅 추가 버튼 -->
+      <button class="fab-btn">
+        <i class="fa-solid fa-plus"></i>
+      </button>
+
+    </div>
+
+    <!-- 하단 탭 바 (Fridge 탭 활성화) -->
+    <div class="navbar">
+      <a class="nav-item" href="summary">
+        <i class="fa-solid fa-chart-pie"></i>
+        <span>통계</span>
+      </a>
+      <a class="nav-item active" href="/">
+        <i class="fa-solid fa-snowflake"></i>
+        <span>냉장고</span>
+      </a>
+      <a class="nav-item" href="recipes">
+        <i class="fa-solid fa-book-open"></i>
+        <span>레시피</span>
+      </a>
+    </div>
+
+    <div class="home-indicator"></div>
+    <!-- 상품 입력 모달창 -->
+<div id="addModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:white; padding:24px; border-radius:16px; width:300px; display:flex; flex-direction:column; gap:12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+    <h3 style="font-size:18px; font-weight:700; color:#1c1c1e;">새 식품 추가</h3>
+    <input type="text" id="modalItemName" placeholder="상품 이름 (예: 우유, 김치)" style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px;">
+    <select id="modalItemStorage" style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px; background:white;">
+      <option value="상온">상온 (InCabinet)</option>
+    </select>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+      <button id="modalCloseBtn" style="padding:8px 14px; background:#e0e0e0; border:none; border-radius:6px; cursor:pointer; font-weight:600;">취소</button>
+      <button id="modalSubmitBtn" style="padding:8px 14px; background:#20e070; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">등록</button>
+    </div>
+  </div>
+</div>
+  </div>
+
+</body>
+<script>
+  function updateClock() {
+    const now = new Date();
+    
+    // 시, 분, 초를 가져오고 두 자릿수로 맞춤 (예: 9시 -> 09시)
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    // HH:MM:SS 형식으로 표시 (HH:MM 형식만 원하시면 :${seconds} 부분을 삭제하세요)
+    document.getElementById('clock').textContent = `${hours}:${minutes}`;
+  }
+
+  // 페이지가 로드될 때 바로 한 번 실행
+  updateClock();
+
+  // 1초(1000ms)마다 updateClock 함수 반복 실행
+  setInterval(updateClock, 1000);
+  // + 버튼(헤더 또는 플로팅 버튼) 클릭 시 모달창 열기
+document.querySelectorAll('.add-btn, .fab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('addModal').style.display = 'flex';
+  });
+});
+
+// 취소 버튼 클릭 시 모달창 닫기
+document.getElementById('modalCloseBtn').addEventListener('click', () => {
+  document.getElementById('addModal').style.display = 'none';
+});
+
+// 추가 및 AI 분석 요청 전송
+document.getElementById('modalSubmitBtn').addEventListener('click', () => {
+  const name = document.getElementById('modalItemName').value;
+  const storage = document.getElementById('modalItemStorage').value;
+
+  if (!name.trim()) {
+    alert('상품 이름을 입력해주세요.');
+    return;
+  }
+
+  // 백엔드로 데이터 전송 (Fetch API 사용)
+  fetch('/api/add-ingredient', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: name, storage: storage })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert(data.message);
+      document.getElementById('addModal').style.display = 'none';
+      document.getElementById('modalItemName').value = '';
+      
+      // 해당 카테고리 페이지로 이동 또는 화면 갱신
+      if (data.category === 'InFridge') location.href = 'InFirdge.html';
+      else if (data.category === 'InFreezer') location.href = 'InFreezer.html';
+      else if (data.category === 'InCabinet') location.href = 'InCabinet.html';
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('서버 통신 중 오류가 발생했습니다.');
+  });
+});
+
+
+function deleteItem(storageName, itemIndex) {
+    if (!confirm("정말 이 품목을 삭제하시겠습니까?")) return;
+
+    fetch('/api/delete-ingredient', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        storage: storageName,
+        index: itemIndex
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload(); // 삭제 성공 시 화면 새로고침
+      } else {
+        alert("삭제에 실패했습니다.");
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+</script>
+</html>

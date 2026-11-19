@@ -288,7 +288,13 @@
 
           <div class="ingredient-info">
             <span class="ingredient-icon"></span>
-            <span class="ingredient-name">{{ item.name }} (D-{{ item.remaining_days }})</span>
+            {% if item.remaining_days > 0 %}
+              <span class="ingredient-name">{{ item.name }} <br> (D-{{ item.remaining_days }})</span>
+            {% elif item.remaining_days == 0 %}
+              <span class="ingredient-name">{{ item.name }} <br> (D-Day)</span>
+            {% else %}
+              <span class="ingredient-name">{{ item.name }} <br> (만료)</span>
+            {% endif %}
           </div>
           {% if item.status == 'safe' %}
             <div class="status-icon safe"><i class="fa-solid fa-check"></i></div>

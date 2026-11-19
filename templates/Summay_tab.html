@@ -304,6 +304,161 @@
       left: 50%;
       transform: translateX(-50%);
     }
+
+    /* 왼쪽 사이드 메뉴 오버레이 & 패널 */
+    .drawer-backdrop {
+      display: none;
+      position: absolute;
+      top: 38px;
+      left: 0;
+      width: 100%;
+      height: calc(100% - 38px);
+      background: rgba(0, 0, 0, 0.35);
+      z-index: 40;
+    }
+
+    .drawer-backdrop.show {
+      display: block;
+    }
+
+    .side-drawer {
+      position: absolute;
+      top: 38px; /* 상단 상태바 아래부터 시작 */
+      left: -250px;
+      width: 240px;
+      height: calc(100% - 38px); /* 상태바 높이를 제외한 나머지 높이 */
+      background-color: #ffffff;
+      box-shadow: 4px 0 18px rgba(0, 0, 0, 0.18);
+      z-index: 50;
+      transition: left 0.25s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .side-drawer.open {
+      left: 0;
+    }
+
+    .drawer-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #ececec;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1c1c1e;
+    }
+
+    .drawer-close-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #666;
+      cursor: pointer;
+    }
+
+    .drawer-list {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 0;
+    }
+
+    .drawer-item {
+      width: 100%;
+      padding: 13px 16px;
+      background: #ffffff;
+      border: none;
+      border-bottom: 1px solid #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 500;
+      color: #222;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .drawer-item:hover {
+      background-color: #f4f9f5;
+      color: #2e7d32;
+    }
+
+    .drawer-item-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .drawer-item-left i {
+      width: 18px;
+      text-align: center;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .drawer-arrow {
+      font-size: 11px;
+      color: #999;
+    }
+
+    /* URL 등록 모달 */
+    .url-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .url-modal-box {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 16px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .url-modal-box h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1c1c1e;
+    }
+
+    .url-modal-box input {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 13px;
+      width: 100%;
+    }
+
+    .url-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .url-btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .url-btn.cancel { background: #e5e5ea; color: #333; }
+    .url-btn.reset { background: #fff3e0; color: #e65100; margin-right: auto; }
+    .url-btn.save { background: #2e7d32; color: #fff; }
+
   </style>
 </head>
 <body>
@@ -321,10 +476,30 @@
 
     <!-- 헤더 -->
     <div class="header">
-      <div class="menu-btn"><i class="fa-solid fa-bars"></i></div>
+      <div class="menu-btn" id="menuBtn"><i class="fa-solid fa-bars"></i></div>
       <h1>통계</h1>
       <div><i></i></div>
     </div>
+
+    <!-- 왼쪽 사이드 메뉴 오버레이 & 목록 -->
+    <div class="drawer-backdrop" id="drawerBackdrop"></div>
+    <aside class="side-drawer" id="sideDrawer">
+      <div class="drawer-header">
+        <span>메뉴</span>
+        <button type="button" class="drawer-close-btn" id="closeDrawerBtn">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="drawer-list">
+        <button type="button" class="drawer-item" id="openUrlModalBtn">
+          <span class="drawer-item-left">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>장보기 사이트 등록</span>
+          </span>
+          <i class="fa-solid fa-chevron-right drawer-arrow"></i>
+        </button>
+      </div>
+    </aside>
 
     <!-- 상단 상태 알림 -->
     {% if warning_count > 0 or danger_count > 0 %}
@@ -411,6 +586,18 @@
     <div class="home-indicator"></div>
   </div>
 
+<!-- 쇼핑몰 URL 등록 모달 -->
+  <div class="url-modal-backdrop" id="urlModal">
+    <div class="url-modal-box">
+      <h3>장보기 사이트 등록</h3>
+      <input type="text" id="cartUrlInput" placeholder="사이트 URL 주소를 입력해주세요">
+      <div class="url-modal-actions">
+        <button type="button" class="url-btn cancel" id="closeUrlModalBtn">취소</button>
+        <button type="button" class="url-btn save" id="saveCartUrlBtn">저장</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 <script>
   function updateClock() {
@@ -421,5 +608,55 @@
   }
   updateClock();
   setInterval(updateClock, 1000);
+
+  const menuBtn = document.getElementById('menuBtn');
+  const sideDrawer = document.getElementById('sideDrawer');
+  const drawerBackdrop = document.getElementById('drawerBackdrop');
+  const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+
+  const urlModal = document.getElementById('urlModal');
+  const cartUrlInput = document.getElementById('cartUrlInput');
+
+  function openDrawer() {
+    sideDrawer.classList.add('open');
+    drawerBackdrop.classList.add('show');
+  }
+
+  function closeDrawer() {
+    sideDrawer.classList.remove('open');
+    drawerBackdrop.classList.remove('show');
+  }
+
+  function normalizeUrl(url) {
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return 'https://' + trimmed;
+  }
+
+  menuBtn.addEventListener('click', openDrawer);
+  closeDrawerBtn.addEventListener('click', closeDrawer);
+  drawerBackdrop.addEventListener('click', closeDrawer);
+
+  document.getElementById('openUrlModalBtn').addEventListener('click', () => {
+    closeDrawer();
+    cartUrlInput.value = localStorage.getItem('customCartUrl');
+    urlModal.style.display = 'flex';
+  });
+
+  document.getElementById('saveCartUrlBtn').addEventListener('click', () => {
+    const rawInput = cartUrlInput.value.trim();
+
+    // 입력창이 비어 있으면 현재 저장된 사이트를 그대로 유지
+    if (!rawInput) {
+      urlModal.style.display = 'none';
+      return;
+    }
+
+    const finalUrl = normalizeUrl(rawInput);
+    localStorage.setItem('customCartUrl', finalUrl);
+    urlModal.style.display = 'none';
+    alert(`장보기 사이트가 등록되었습니다:\n${finalUrl}`);
+  });
 </script>
 </html>

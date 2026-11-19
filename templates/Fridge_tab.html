@@ -308,7 +308,11 @@
 
     <!-- 헤더 -->
     <div class="header">
-      <div class="back-btn"><a href="https://www.coupang.com/"><i class="fa-solid fa-cart-shopping" ></i></a></div>
+      <div class="back-btn">
+        <a id="cartLink" href="https://www.coupang.com/" target="_blank" rel="noopener noreferrer">
+          <i class="fa-solid fa-cart-shopping"></i>
+        </a>
+      </div>
       <h1>냉장고</h1>
       <div class="add-btn"><i class="fa-solid fa-plus"></i></div>
     </div>
@@ -449,5 +453,10 @@
       }
     });
   });
+
+  const savedCartUrl = localStorage.getItem('customCartUrl');
+  if (savedCartUrl) {
+    document.getElementById('cartLink').href = savedCartUrl;
+  }
 </script>
 </html>

@@ -291,6 +291,91 @@
       transform: translateX(-50%);
       z-index: 11;
     }
+
+    .sticky-note {
+      cursor: pointer;
+      overflow: hidden;
+      text-align: center;
+      line-height: 1.25;
+      word-break: break-word;
+      color: #222;
+      font-weight: 600;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .sticky-note:hover {
+      box-shadow: 2px 5px 10px rgba(0,0,0,0.28);
+    }
+
+    /* 포스트잇 메모 모달 */
+    .memo-modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .memo-modal-box {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 16px;
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    .memo-modal-box h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1c1c1e;
+    }
+
+    .memo-modal-box textarea {
+      width: 100%;
+      height: 100px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 13px;
+      resize: none;
+      font-family: inherit;
+    }
+
+    .memo-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .memo-btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .memo-btn.clear {
+      background: #ffebee;
+      color: #c62828;
+      margin-right: auto;
+    }
+
+    .memo-btn.cancel {
+      background: #e5e5ea;
+      color: #333;
+    }
+
+    .memo-btn.save {
+      background: #2e7d32;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -335,9 +420,9 @@
           <a href="InFreezer.html">
             <div class="handle-left"></div>
           </a>
-          <!-- 메모지 3개 -->
-          <div class="sticky-note note-2"></div>
-          <div class="sticky-note note-3"></div>
+          <!-- 메모지 2개 (클릭 시 메모 작성) -->
+          <div class="sticky-note note-2" data-note-id="note-2" title="메모 작성"></div>
+          <div class="sticky-note note-3" data-note-id="note-3" title="메모 작성"></div>
         </div>
 
         <!-- 하단 냉장실 -->
@@ -396,6 +481,18 @@
   </div>
 </div>
 
+<!-- 포스트잇 메모 모달 -->
+  <div class="memo-modal-backdrop" id="memoModal">
+    <div class="memo-modal-box">
+      <h3 id="memoModalTitle">포스트잇 메모</h3>
+      <textarea id="memoTextarea" placeholder="냉장고 메모를 입력하세요..."></textarea>
+      <div class="memo-modal-actions">
+        <button type="button" class="memo-btn clear" id="memoClearBtn">지우기</button>
+        <button type="button" class="memo-btn cancel" id="memoCancelBtn">취소</button>
+        <button type="button" class="memo-btn save" id="memoSaveBtn">저장</button>
+      </div>
+    </div>
+  </div>
 </body>
 <script>
   function updateClock() {
@@ -458,5 +555,72 @@
   if (savedCartUrl) {
     document.getElementById('cartLink').href = savedCartUrl;
   }
+
+  // --- [포스트잇 메모 기능] ---
+  const memoModal = document.getElementById('memoModal');
+  const memoModalTitle = document.getElementById('memoModalTitle');
+  const memoTextarea = document.getElementById('memoTextarea');
+  const memoClearBtn = document.getElementById('memoClearBtn');
+  const memoCancelBtn = document.getElementById('memoCancelBtn');
+  const memoSaveBtn = document.getElementById('memoSaveBtn');
+
+  let activeNoteId = null;
+
+  function getMemoStorageKey(noteId) {
+    return `fridge_sticky_memo_${noteId}`;
+  }
+
+  function renderAllMemos() {
+    document.querySelectorAll('.sticky-note').forEach(noteEl => {
+      const noteId = noteEl.dataset.noteId;
+      if (!noteId) return;
+      const savedText = localStorage.getItem(getMemoStorageKey(noteId)) || '';
+      noteEl.textContent = savedText;
+    });
+  }
+
+  document.querySelectorAll('.sticky-note').forEach(noteEl => {
+    noteEl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const noteId = noteEl.dataset.noteId;
+      if (!noteId) return;
+
+      activeNoteId = noteId;
+      memoModalTitle.textContent = noteId === 'note-2' ? '노란 메모지' : '핑크 메모지';
+      memoTextarea.value = localStorage.getItem(getMemoStorageKey(noteId)) || '';
+      memoModal.style.display = 'flex';
+      memoTextarea.focus();
+    });
+  });
+
+  memoCancelBtn.addEventListener('click', () => {
+    memoModal.style.display = 'none';
+    activeNoteId = null;
+  });
+
+  memoSaveBtn.addEventListener('click', () => {
+    if (!activeNoteId) return;
+    const text = memoTextarea.value.trim();
+    if (text) {
+      localStorage.setItem(getMemoStorageKey(activeNoteId), text);
+    } else {
+      localStorage.removeItem(getMemoStorageKey(activeNoteId));
+    }
+    renderAllMemos();
+    memoModal.style.display = 'none';
+    activeNoteId = null;
+  });
+
+  memoClearBtn.addEventListener('click', () => {
+    if (!activeNoteId) return;
+    memoTextarea.value = '';
+    localStorage.removeItem(getMemoStorageKey(activeNoteId));
+    renderAllMemos();
+    memoModal.style.display = 'none';
+    activeNoteId = null;
+  });
+
+  // 페이지 진입 시 저장된 포스트잇 메모 불러오기
+  renderAllMemos();
 </script>
 </html>

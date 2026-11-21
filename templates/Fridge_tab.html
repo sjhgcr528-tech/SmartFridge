@@ -186,21 +186,14 @@
     }
 
     .note-1 {
-      background-color: #ffd8a8; /* 주황색 메모지 */
-      top: 45px;
-      left: 42px;
-      transform: rotate(-3deg);
-    }
-
-    .note-2 {
       background-color: #ffec99; /* 노란색 메모지 */
       top: 25px;
       right: 32px;
       transform: rotate(2deg);
     }
 
-    .note-3 {
-      background-color: #fcc2d7; /* 핑크색 메모지 */
+    .note-2 {
+      background-color: #fcc2d7; /* 빨간색 메모지 */
       top: 105px;
       left: 105px;
       transform: rotate(-1deg);
@@ -293,21 +286,64 @@
     }
 
     .sticky-note {
+      position: absolute;
+      width: 54px;
+      height: 54px;
+      padding: 6px;
+      box-shadow: 2px 3px 6px rgba(0,0,0,0.2);
+      font-size: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 2px;
       cursor: pointer;
       overflow: hidden;
+      z-index: 5;
+      transition: width 0.2s ease, height 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .sticky-note::before {
+      content: "";
+      position: absolute;
+      top: -4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 8px;
+      background-color: #a3a3a3;
+      border-radius: 50%;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    /* 평소에는 메모 글자를 숨겨 깔끔한 포스트잇 형태로 유지 */
+    .note-text {
+      display: none;
+      width: 100%;
+      max-height: 100%;
+      overflow-y: auto;
       text-align: center;
-      line-height: 1.25;
+      line-height: 1.3;
       word-break: break-word;
       color: #222;
       font-weight: 600;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      font-size: 11px;
     }
 
+    /* 마우스를 올렸을 때 메모장이 커지면서 메모 내용 표시 */
     .sticky-note:hover {
-      box-shadow: 2px 5px 10px rgba(0,0,0,0.28);
+      width: 132px;
+      height: 112px;
+      padding: 12px 10px 10px;
+      transform: rotate(0deg) scale(1.03);
+      box-shadow: 4px 8px 18px rgba(0,0,0,0.28);
+      z-index: 30;
     }
 
-    /* 포스트잇 메모 모달 */
+    .sticky-note:hover .note-text {
+      display: block;
+    }
+
+    /* 메모 입력 모달 */
     .memo-modal-backdrop {
       display: none;
       position: fixed;
@@ -420,10 +456,13 @@
           <a href="InFreezer.html">
             <div class="handle-left"></div>
           </a>
-          <!-- 메모지 2개 (클릭 시 메모 작성) -->
-          <div class="sticky-note note-2" data-note-id="note-2" title="메모 작성"></div>
-          <div class="sticky-note note-3" data-note-id="note-3" title="메모 작성"></div>
-        </div>
+            <div class="sticky-note note-1" data-note-id="note-1">
+              <span class="note-text"></span>
+            </div>
+            <div class="sticky-note note-2" data-note-id="note-2">
+              <span class="note-text"></span>
+            </div>
+          </div>
 
         <!-- 하단 냉장실 -->
         <div class="fridge-door fridge-main">
@@ -485,7 +524,7 @@
   <div class="memo-modal-backdrop" id="memoModal">
     <div class="memo-modal-box">
       <h3 id="memoModalTitle">포스트잇 메모</h3>
-      <textarea id="memoTextarea" placeholder="냉장고 메모를 입력하세요..."></textarea>
+      <textarea id="memoTextarea" placeholder="메모를 입력하세요..."></textarea>
       <div class="memo-modal-actions">
         <button type="button" class="memo-btn clear" id="memoClearBtn">지우기</button>
         <button type="button" class="memo-btn cancel" id="memoCancelBtn">취소</button>
@@ -494,6 +533,7 @@
     </div>
   </div>
 </body>
+
 <script>
   function updateClock() {
     const now = new Date();
@@ -556,71 +596,71 @@
     document.getElementById('cartLink').href = savedCartUrl;
   }
 
-  // --- [포스트잇 메모 기능] ---
-  const memoModal = document.getElementById('memoModal');
-  const memoModalTitle = document.getElementById('memoModalTitle');
-  const memoTextarea = document.getElementById('memoTextarea');
-  const memoClearBtn = document.getElementById('memoClearBtn');
-  const memoCancelBtn = document.getElementById('memoCancelBtn');
-  const memoSaveBtn = document.getElementById('memoSaveBtn');
+ // 3) 포스트잇 메모 기능 (호버 시 확대 + 내용 표시 / 클릭 시 작성·수정)
+    const memoModal = document.getElementById('memoModal');
+    const memoModalTitle = document.getElementById('memoModalTitle');
+    const memoTextarea = document.getElementById('memoTextarea');
+    const memoClearBtn = document.getElementById('memoClearBtn');
+    const memoCancelBtn = document.getElementById('memoCancelBtn');
+    const memoSaveBtn = document.getElementById('memoSaveBtn');
+    let activeNoteId = null;
 
-  let activeNoteId = null;
-
-  function getMemoStorageKey(noteId) {
-    return `fridge_sticky_memo_${noteId}`;
-  }
-
-  function renderAllMemos() {
-    document.querySelectorAll('.sticky-note').forEach(noteEl => {
-      const noteId = noteEl.dataset.noteId;
-      if (!noteId) return;
-      const savedText = localStorage.getItem(getMemoStorageKey(noteId)) || '';
-      noteEl.textContent = savedText;
-    });
-  }
-
-  document.querySelectorAll('.sticky-note').forEach(noteEl => {
-    noteEl.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const noteId = noteEl.dataset.noteId;
-      if (!noteId) return;
-
-      activeNoteId = noteId;
-      memoModalTitle.textContent = noteId === 'note-2' ? '노란 메모지' : '핑크 메모지';
-      memoTextarea.value = localStorage.getItem(getMemoStorageKey(noteId)) || '';
-      memoModal.style.display = 'flex';
-      memoTextarea.focus();
-    });
-  });
-
-  memoCancelBtn.addEventListener('click', () => {
-    memoModal.style.display = 'none';
-    activeNoteId = null;
-  });
-
-  memoSaveBtn.addEventListener('click', () => {
-    if (!activeNoteId) return;
-    const text = memoTextarea.value.trim();
-    if (text) {
-      localStorage.setItem(getMemoStorageKey(activeNoteId), text);
-    } else {
-      localStorage.removeItem(getMemoStorageKey(activeNoteId));
+    function getMemoKey(noteId) {
+      return `fridge_sticky_memo_${noteId}`;
     }
-    renderAllMemos();
-    memoModal.style.display = 'none';
-    activeNoteId = null;
-  });
 
-  memoClearBtn.addEventListener('click', () => {
-    if (!activeNoteId) return;
-    memoTextarea.value = '';
-    localStorage.removeItem(getMemoStorageKey(activeNoteId));
-    renderAllMemos();
-    memoModal.style.display = 'none';
-    activeNoteId = null;
-  });
+    function renderMemos() {
+      document.querySelectorAll('.sticky-note').forEach(noteEl => {
+        const noteId = noteEl.dataset.noteId;
+        const textEl = noteEl.querySelector('.note-text');
+        if (!noteId || !textEl) return;
 
-  // 페이지 진입 시 저장된 포스트잇 메모 불러오기
-  renderAllMemos();
+        const saved = localStorage.getItem(getMemoKey(noteId));
+        textEl.textContent = saved && saved.trim() ? saved : '';
+      });
+    }
+
+    document.querySelectorAll('.sticky-note').forEach(noteEl => {
+      noteEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const noteId = noteEl.dataset.noteId;
+        if (!noteId) return;
+
+        activeNoteId = noteId;
+        memoModalTitle.textContent = noteId === 'note-1' ? '노란 메모지' : '빨간 메모지';
+        memoTextarea.value = localStorage.getItem(getMemoKey(noteId)) || '';
+        memoModal.style.display = 'flex';
+        memoTextarea.focus();
+      });
+    });
+
+    memoCancelBtn.addEventListener('click', () => {
+      memoModal.style.display = 'none';
+      activeNoteId = null;
+    });
+
+    memoSaveBtn.addEventListener('click', () => {
+      if (!activeNoteId) return;
+      const val = memoTextarea.value.trim();
+      if (val) {
+        localStorage.setItem(getMemoKey(activeNoteId), val);
+      } else {
+        localStorage.removeItem(getMemoKey(activeNoteId));
+      }
+      renderMemos();
+      memoModal.style.display = 'none';
+      activeNoteId = null;
+    });
+
+    memoClearBtn.addEventListener('click', () => {
+      if (!activeNoteId) return;
+      memoTextarea.value = '';
+      localStorage.removeItem(getMemoKey(activeNoteId));
+      renderMemos();
+      memoModal.style.display = 'none';
+      activeNoteId = null;
+    });
+
+    renderMemos();
 </script>
 </html>

@@ -2,13 +2,13 @@
     "InFridge": [
         {
             "name": "김치",
-            "remaining_days": -2,
+            "remaining_days": -3,
             "expiry_date": "2026-11-18",
             "status": "danger"
         },
         {
             "name": "우유",
-            "remaining_days": 44,
+            "remaining_days": 43,
             "expiry_date": "2027-01-03",
             "status": "safe"
         }
@@ -16,7 +16,7 @@
     "InFreezer": [
         {
             "name": "아이스크림",
-            "remaining_days": -18,
+            "remaining_days": -19,
             "expiry_date": "2026-11-02",
             "status": "danger"
         }
@@ -24,13 +24,13 @@
     "InCabinet": [
         {
             "name": "밥",
-            "remaining_days": -17,
+            "remaining_days": -18,
             "expiry_date": "2026-11-03",
             "status": "danger"
         },
         {
             "name": "밥",
-            "remaining_days": -17,
+            "remaining_days": -18,
             "expiry_date": "2026-11-03",
             "status": "danger"
         }

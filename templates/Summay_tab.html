@@ -644,6 +644,10 @@
     urlModal.style.display = 'flex';
   });
 
+  document.getElementById('closeUrlModalBtn').addEventListener('click', () => {
+    urlModal.style.display = 'none';
+  });
+
   document.getElementById('saveCartUrlBtn').addEventListener('click', () => {
     const rawInput = cartUrlInput.value.trim();
 

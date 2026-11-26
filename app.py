@@ -184,71 +184,89 @@ def recommend_recipes():
 # 1. 식품 추가 및 AI 소비기한 산정 API
 @app.route("/api/add-ingredient", methods=["POST"])
 def add_ingredient():
-  data = request.json
-  name = data.get("name")
-  storage = data.get("storage")  # '냉장', '냉동', '상온'
 
-  # 기본값 설정 (AI 연동 실패 대비)
-  remaining_days = 7
+    data = request.json
+    ingredients = data.get("ingredients", [])
 
-  # AI(Gemini)를 통한 소비기한 자동 산정 로직
-  try:
-    prompt = (
-        f"식품 이름: {name}, 보관 방법: {storage}. 대한민국 식약처(MFDS) "
-        "식품별 권장 소비기한 자료를 근거로, 이 식품의 해당 보관 방법에서의 "
-        "남은 유통기한(소비기한)을 오직 일(day) 단위 숫자만 알려줘. 예시: 14"
-    )
-    
-    response = client.models.generate_content(
-        model="gemini-3.5-flash", 
-        contents=prompt
-    )
-    
-    # [핵심] 응답 텍스트에서 숫자만 안전하게 추출 (예: "약 14일" -> 14)
-    response_text = response.text.strip()
-    digits = "".join(filter(str.isdigit, response_text))
-    
-    if digits:
-      remaining_days = int(digits)
-    else:
-      print(f"[디버깅] AI가 숫자를 반환하지 않음. 응답 내용: {response_text}")
+    added_count = 0
 
-  except Exception as e:
-    # API 호출 실패 시 터미널에 정확한 에러 원인 출력
-    print(f"[에러 발생] AI 연동 중 오류가 발생했습니다: {e}")
-    remaining_days = 7
+    for item in ingredients:
 
-  # 오늘 날짜를 기준으로 만료일(expiry_date) 계산
-  from datetime import timedelta
-  today = date.today()
-  expiry_date = today + timedelta(days=remaining_days)
+        name = item.get("name")
+        storage = item.get("storage")
 
-  category_map = {"냉장": "InFridge", "냉동": "InFreezer", "상온": "InCabinet"}
-  target_category = category_map.get(storage, "InFridge")
+        if not name:
+            continue
 
-  # 상태 분류
-  if remaining_days < 0:
-    status = "danger"
-  elif remaining_days <= 7:
-    status = "warning"
-  else:
-    status = "safe"
+        remaining_days = 7
 
-  new_item = {
-      "name": name,
-      "remaining_days": remaining_days,
-      "expiry_date": expiry_date.strftime("%Y-%m-%d"),
-      "status": status,
-  }
+        try:
 
-  database[target_category].append(new_item)
-  save_database(database)
+            prompt = (
+                f"식품 이름: {name}, 보관 방법: {storage}. "
+                "대한민국 식약처(MFDS) 식품별 권장 소비기한 자료를 근거로 "
+                "남은 소비기한을 숫자만 알려줘."
+            )
 
-  return jsonify({
-      "success": True,
-      "category": target_category,
-      "message": f"{target_category}에 {name}(D-{remaining_days}) 등록됨",
-  })
+            response = client.models.generate_content(
+                model="gemini-3.5-flash",
+                contents=prompt
+            )
+
+            response_text = response.text.strip()
+
+            digits = "".join(
+                filter(str.isdigit, response_text)
+            )
+
+            if digits:
+                remaining_days = int(digits)
+
+        except Exception as e:
+
+            print(f"[에러 발생] {e}")
+            remaining_days = 7
+
+        from datetime import timedelta
+
+        today = date.today()
+        expiry_date = today + timedelta(days=remaining_days)
+
+        category_map = {
+            "냉장": "InFridge",
+            "냉동": "InFreezer",
+            "상온": "InCabinet"
+        }
+
+        target_category = category_map.get(
+            storage,
+            "InFridge"
+        )
+
+        if remaining_days < 0:
+            status = "danger"
+        elif remaining_days <= 7:
+            status = "warning"
+        else:
+            status = "safe"
+
+        new_item = {
+            "name": name,
+            "remaining_days": remaining_days,
+            "expiry_date": expiry_date.strftime("%Y-%m-%d"),
+            "status": status,
+        }
+
+        database[target_category].append(new_item)
+
+        added_count += 1
+
+    save_database(database)
+
+    return jsonify({
+        "success": True,
+        "message": f"{added_count}개의 식품이 등록되었습니다."
+    })
 
 
 @app.route("/api/delete-ingredient", methods=["POST"])

@@ -506,13 +506,39 @@
   <!-- 상품 입력 모달창 -->
 <div id="addModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; justify-content:center; align-items:center;">
   <div style="background:white; padding:24px; border-radius:16px; width:300px; display:flex; flex-direction:column; gap:12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-    <h3 style="font-size:18px; font-weight:700; color:#1c1c1e;">새 식품 추가</h3>
-    <input type="text" id="modalItemName" placeholder="상품 이름 (예: 우유, 김치)" style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px;">
-    <select id="modalItemStorage" style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px; background:white;">
-      <option value="냉장">냉장 (InFridge)</option>
-      <option value="냉동">냉동 (InFreezer)</option>
-      <option value="상온">상온 (InCabinet)</option>
-    </select>
+    <h3 style="font-size:18px; font-weight:700; color:#1c1c1e;">
+    새 식품 추가
+</h3>
+
+<div id="ingredientContainer">
+
+    <div class="ingredient-row">
+
+        <input
+            type="text"
+            class="ingredient-name"
+            placeholder="상품 이름 (예: 우유)"
+            style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px; width:100%; margin-bottom:8px;">
+
+        <select
+            class="ingredient-storage"
+            style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px; background:white; width:100%;">
+
+            <option value="냉장">냉장</option>
+            <option value="냉동">냉동</option>
+            <option value="상온">상온</option>
+
+        </select>
+
+    </div>
+
+</div>
+
+<button
+    id="addRowBtn"
+    style="padding:10px; background:#4CAF50; color:white; border:none; border-radius:8px; cursor:pointer;">
+    + 식품 추가
+</button>
     <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
       <button id="modalCloseBtn" style="padding:8px 14px; background:#e0e0e0; border:none; border-radius:6px; cursor:pointer; font-weight:600;">취소</button>
       <button id="modalSubmitBtn" style="padding:8px 14px; background:#20e070; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:600;">등록</button>
@@ -558,24 +584,85 @@
       document.getElementById('addModal').style.display = 'flex';
     });
   });
+document.getElementById('addRowBtn').addEventListener('click', () => {
 
-  document.getElementById('modalCloseBtn').addEventListener('click', () => {
+    const container =
+        document.getElementById('ingredientContainer');
+
+    const row = document.createElement('div');
+
+    row.className = 'ingredient-row';
+
+    row.style.marginTop = '10px';
+
+    row.innerHTML = `
+        <input
+            type="text"
+            class="ingredient-name"
+            placeholder="상품 이름"
+            style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px; width:100%; margin-bottom:8px;">
+
+        <select
+            class="ingredient-storage"
+            style="padding:10px; border:1px solid #ddd; border-radius:8px; font-size:14px; background:white; width:100%;">
+
+            <option value="냉장">냉장</option>
+            <option value="냉동">냉동</option>
+            <option value="상온">상온</option>
+
+        </select>
+    `;
+
+    container.appendChild(row);
+
+});
+
+document.getElementById('modalCloseBtn').addEventListener('click', () => {
     document.getElementById('addModal').style.display = 'none';
-  });
+});
 
   document.getElementById('modalSubmitBtn').addEventListener('click', () => {
-    const name = document.getElementById('modalItemName').value;
-    const storage = document.getElementById('modalItemStorage').value;
 
-    if (!name.trim()) {
-      alert('상품 이름을 입력해주세요.');
-      return;
+    const ingredients = [];
+
+    document.querySelectorAll('.ingredient-row').forEach(row => {
+
+        const name =
+            row.querySelector('.ingredient-name').value;
+
+        const storage =
+            row.querySelector('.ingredient-storage').value;
+
+        if (name.trim()) {
+
+            ingredients.push({
+                name: name,
+                storage: storage
+            });
+
+        }
+
+    });
+
+    if (ingredients.length === 0) {
+
+        alert('상품 이름을 입력해주세요.');
+        return;
+
     }
 
     fetch('/api/add-ingredient', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name, storage: storage })
+
+        method: 'POST',
+
+        headers: {
+            'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+            ingredients: ingredients
+        })
+
     })
     .then(response => response.json())
     .then(data => {
